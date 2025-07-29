@@ -1,0 +1,1 @@
+gcc -shared -o rsa_lib.so rsa.c -lgmp -lsodium -fPIC
