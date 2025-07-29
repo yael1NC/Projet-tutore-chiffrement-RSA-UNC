@@ -4,17 +4,18 @@
             "name": "Win32",
             "includePath": [
                 "${workspaceFolder}/**",
-                "C:/Users/Crisav/vcpkg/installed/x64-windows/include" // <--- Add this line for GMP
+                "C:/Users/Crisav/vcpkg/installed/x64-windows/include",
+                "/usr/include/x86_64-linux-gnu"
             ],
             "defines": [
                 "_DEBUG",
                 "UNICODE",
                 "_UNICODE"
             ],
-            "compilerPath": "C:\\MinGW\\bin\\gcc.exe",
+            "compilerPath": "/usr/bin/gcc",
             "cStandard": "c11",
             "cppStandard": "gnu++14",
-            "intelliSenseMode": "windows-gcc-x86" // Note: This might need to be 'windows-gcc-x64' if you installed x64 GMP
+            "intelliSenseMode": "windows-gcc-x86"
         }
     ],
     "version": 4

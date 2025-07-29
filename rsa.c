@@ -35,9 +35,14 @@ int is_first(mpz_t n) {
 }
 
 int miller_rabin(mpz_t n, mpz_t a) {
-    mpz_t d, s_val;
+    mpz_t d, s_val, x; // Déclarer x ici
+    mpz_t n_minus_1; // Nouvelle variable temporaire
+
     mpz_init(d);
     mpz_init(s_val);
+    mpz_init(x);
+    mpz_init(n_minus_1); // Initialiser la variable temporaire
+
     mpz_sub_ui(d, n, 1); // d = n - 1
 
     unsigned long s = 0;
@@ -47,23 +52,27 @@ int miller_rabin(mpz_t n, mpz_t a) {
     }
     mpz_set_ui(s_val, s);
 
-    mpz_t x;
-    mpz_init(x);
     mpz_powm_sec(x, a, d, n); // x = a^d mod n
 
-    if (mpz_cmp_ui(x, 1) == 0 || mpz_cmp(x, mpz_sub_ui(x, n, 1)) == 0) {
+    mpz_sub_ui(n_minus_1, n, 1); // Calculer n - 1 une seule fois
+
+    // Comparer x avec 1 ou (n - 1)
+    if (mpz_cmp_ui(x, 1) == 0 || mpz_cmp(x, n_minus_1) == 0) {
         mpz_clear(d);
         mpz_clear(s_val);
         mpz_clear(x);
+        mpz_clear(n_minus_1); // Libérer la variable temporaire
         return 0; // Probablement premier
     }
 
     for (unsigned long i = 0; i < s; i++) {
         mpz_powm_ui(x, x, 2, n); // x = x^2 mod n
-        if (mpz_cmp(x, mpz_sub_ui(x, n, 1)) == 0) {
+        // Comparer x avec (n - 1)
+        if (mpz_cmp(x, n_minus_1) == 0) {
             mpz_clear(d);
             mpz_clear(s_val);
             mpz_clear(x);
+            mpz_clear(n_minus_1); // Libérer la variable temporaire
             return 0; // Probablement premier
         }
     }
@@ -71,6 +80,7 @@ int miller_rabin(mpz_t n, mpz_t a) {
     mpz_clear(d);
     mpz_clear(s_val);
     mpz_clear(x);
+    mpz_clear(n_minus_1); // Libérer la variable temporaire
     return 1; // Composé
 }
 
@@ -202,7 +212,7 @@ void rsa_sign_string(const char* message_hash_hex, const char* d_hex, const char
     mpz_init(message_hash_mpz);
     mpz_init(signature_mpz);
     mpz_init(d_mpz);
-    mpz_init(n_mpz);
+mpz_init(n_mpz);
 
     mpz_set_str(message_hash_mpz, message_hash_hex, 16);
     mpz_set_str(d_mpz, d_hex, 16);
