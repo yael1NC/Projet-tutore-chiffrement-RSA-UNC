@@ -1,13 +1,13 @@
 import ctypes
 import os
 
-# --- Configuration des chemins de fichiers pour les clés ---
+# Configuration des chemins de fichiers pour les clés
 KEY_DIR = "keys"
 PUB_N_FILE = os.path.join(KEY_DIR, "public_n.key")
 PUB_E_FILE = os.path.join(KEY_DIR, "public_e.key")
 PRIV_D_FILE = os.path.join(KEY_DIR, "private_d.key") # Seul d est privé, n est public
 
-# --- Charger la bibliothèque C ---
+# Charger la bibliothèque C
 try:
     # Assurez-vous que le fichier rsa_lib.so est dans le même répertoire
     # ou dans un chemin accessible par le système.
@@ -17,7 +17,7 @@ except OSError as e:
     print(f"Détails de l'erreur : {e}")
     exit(1)
 
-# --- Définir les signatures des fonctions C (nouvelle API basée sur les chaînes) ---
+# Définir les signatures des fonctions C (nouvelle API basée sur les chaînes)
 
 # void generate_rsa_keys(char* n_hex_out, char* d_hex_out, size_t buffer_size);
 rsa_lib.generate_rsa_keys.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_size_t]
@@ -39,7 +39,7 @@ rsa_lib.rsa_sign_string.restype = None
 rsa_lib.rsa_verify_string.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p]
 rsa_lib.rsa_verify_string.restype = ctypes.c_int
 
-# --- Fonctions Python pour la persistance des clés (lecture/écriture de fichiers) ---
+# Fonctions Python pour la persistance des clés (lecture/écriture de fichiers)
 
 def save_key_component(filename, value_str):
     """Sauvegarde un composant de clé (une chaîne hex) dans un fichier."""
@@ -77,7 +77,7 @@ def load_python_keys():
         print("Aucune clé trouvée, ou fichiers incomplets.")
         return None
 
-# --- Fonctions wrapper Python pour les opérations RSA ---
+# Fonctions wrapper Python pour les opérations RSA
 
 # Taille de buffer recommandée pour les sorties hexadécimales des fonctions C
 # Une clé RSA de 2048 bits = 2048/8 = 256 octets. En hex, 2 caractères par octet = 512 caractères.
@@ -147,7 +147,7 @@ def rsa_verify_python(message_hash_hex, signature_hex, e_hex, n_hex):
     return bool(is_valid) # Convertit le 0/1 C en True/False Python
 
 
-# --- Logique principale du serveur Python ---
+# Logique principale du serveur Python
 if __name__ == "__main__":
     # Assurez-vous que le répertoire des clés existe
     os.makedirs(KEY_DIR, exist_ok=True)
@@ -168,8 +168,8 @@ if __name__ == "__main__":
     print(f"\nClés actives (N, E, D) : (N:{n_val[:50]}..., E:{e_val}, D:{d_val[:50]}...)")
 
 
-    # --- Test des opérations RSA avec les clés gérées par Python ---
-    print("\n--- Test de chiffrement/déchiffrement ---")
+    # Test des opérations RSA avec les clés gérées par Python
+    print("\nTest de chiffrement/déchiffrement")
     # Pour un test simple, un nombre peut être représenté par son hexadécimal
     # En pratique, le message serait haché ou converti en un grand entier puis en hex
     original_msg_hex = "abcdef1234567890abcdef1234567890" # Exemple de message hex
@@ -186,7 +186,7 @@ if __name__ == "__main__":
     else:
         print("ERREUR: Chiffrement/Déchiffrement échoué.")
 
-    print("\n--- Test de signature/vérification ---")
+    print("\nTest de signature/vérification")
     message_hash_hex = "fedcba9876543210fedcba9876543210" # Exemple de hachage hex
     print(f"Hachage du message (hex): {message_hash_hex}")
 
@@ -201,7 +201,7 @@ if __name__ == "__main__":
         print("Signature invalide !")
 
     # Test avec un hachage modifié pour voir l'échec
-    print("\n--- Test de vérification avec hachage modifié (devrait échouer) ---")
+    print("\nTest de vérification avec hachage modifié (devrait échouer)")
     tampered_hash_hex = "fedcba9876543210fedcba9876543211" # Légèrement modifié
     is_valid_tampered = rsa_verify_python(tampered_hash_hex, signature_hex, e_val, n_val)
     print(f"Vérification de la signature avec hachage altéré : {is_valid_tampered}")
