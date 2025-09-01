@@ -3,7 +3,6 @@ import os
 import socket
 import json
 
-# --- Configuration et chargement de la bibliothèque C ( inchangé ) ---
 KEY_DIR = "keys"
 PUB_N_FILE = os.path.join(KEY_DIR, "public_n.key")
 PUB_E_FILE = os.path.join(KEY_DIR, "public_e.key")
@@ -15,24 +14,18 @@ except OSError as e:
     print(f"Erreur : Impossible de charger la bibliothèque C rsa_lib.so. Détails : {e}")
     exit(1)
 
-# Définir les signatures des fonctions C
-# void generate_rsa_keys(char* n_hex_out, char* d_hex_out, size_t buffer_size);
 rsa_lib.generate_rsa_keys.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_size_t]
 rsa_lib.generate_rsa_keys.restype = None
 
-# void rsa_encrypt_string(const char* non_encrypt_hex, const char* e_hex, const char* n_hex, char* encrypt_message_hex_out, size_t buffer_size);
 rsa_lib.rsa_encrypt_string.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p, ctypes.c_size_t]
 rsa_lib.rsa_encrypt_string.restype = None
 
-# void rsa_decrypt_string(const char* encrypt_message_hex, const char* d_hex, const char* n_hex, char* non_encrypt_hex_out, size_t buffer_size);
 rsa_lib.rsa_decrypt_string.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p, ctypes.c_size_t]
 rsa_lib.rsa_decrypt_string.restype = None
 
-# void rsa_sign_string(const char* message_hash_hex, const char* d_hex, const char* n_hex, char* signature_hex_out, size_t buffer_size);
 rsa_lib.rsa_sign_string.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p, ctypes.c_size_t]
 rsa_lib.rsa_sign_string.restype = None
 
-# int rsa_verify_string(const char* message_hash_hex, const char* signature_hex, const char* e_hex, const char* n_hex);
 rsa_lib.rsa_verify_string.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p]
 rsa_lib.rsa_verify_string.restype = ctypes.c_int
 
@@ -56,9 +49,7 @@ def rsa_sign_python(message_hash_hex, d_hex, n_hex):
 def rsa_verify_python(message_hash_hex, signature_hex, e_hex, n_hex):
     return rsa_lib.rsa_verify_string(message_hash_hex.encode('utf-8'), signature_hex.encode('utf-8'), e_hex.encode('utf-8'), n_hex.encode('utf-8'))
 
-# --- Fonctions de gestion de fichiers (inchangé) ---
 def load_or_generate_keys():
-    # ... le reste du code de cette fonction est inchangé
     print("Vérification des fichiers de clés...")
     if (os.path.exists(PUB_N_FILE) and
         os.path.exists(PUB_E_FILE) and
@@ -100,8 +91,6 @@ def load_or_generate_keys():
     print("Clés sauvegardées avec succès.")
     return n_val, e_val, d_val
 
-
-# --- Nouvelle partie : Logique du serveur ---
 HOST = '0.0.0.0'  # Écoute sur toutes les interfaces réseau
 PORT = 65432      # Port arbitraire
 
@@ -109,7 +98,6 @@ def handle_client(conn, addr, d_val, n_val, e_val):
     """Gère la connexion d'un client."""
     print(f"Connecté par {addr}")
     try:
-        # Recevoir les données du client
         data = conn.recv(4096).decode('utf-8')
         request = json.loads(data)
 
@@ -124,8 +112,6 @@ def handle_client(conn, addr, d_val, n_val, e_val):
             response['status'] = 'success'
         elif operation == 'verify':
             print(f"Requête de vérification reçue.")
-            # Pour la vérification, le client envoie le hachage et la signature
-            # On assume que la charge utile est un dictionnaire avec 'hash' et 'signature'
             is_valid = rsa_verify_python(payload['hash'], payload['signature'], e_val, n_val)
             response['result'] = is_valid
             response['status'] = 'success'
@@ -133,7 +119,6 @@ def handle_client(conn, addr, d_val, n_val, e_val):
             response['status'] = 'error'
             response['message'] = 'Opération non supportée.'
 
-        # Envoyer la réponse au client
         conn.sendall(json.dumps(response).encode('utf-8'))
 
     except json.JSONDecodeError:
