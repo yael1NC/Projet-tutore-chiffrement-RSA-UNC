@@ -4,7 +4,6 @@ import ctypes
 import os
 import hashlib
 
-# --- Configuration et chargement de la bibliothèque C ---
 KEY_DIR = "keys"
 PUB_N_FILE = os.path.join(KEY_DIR, "public_n.key")
 PUB_E_FILE = os.path.join(KEY_DIR, "public_e.key")
@@ -16,21 +15,17 @@ except OSError as e:
     print(f"Erreur : Impossible de charger la bibliothèque C rsa_lib.so. Détails : {e}")
     exit(1)
 
-# Définir les signatures des fonctions C
 rsa_lib.rsa_encrypt_string.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p, ctypes.c_size_t]
 rsa_lib.rsa_encrypt_string.restype = None
 
-# On n'a pas besoin des autres fonctions du côté client, car le déchiffrement et la vérification se font côté serveur
-# On va donc utiliser une version python des fonctions si besoin, par exemple pour la vérification
 
 def rsa_encrypt_python(non_encrypt_hex, e_hex, n_hex):
     encrypt_message_hex_out = ctypes.create_string_buffer(BUFFER_SIZE)
     rsa_lib.rsa_encrypt_string(non_encrypt_hex.encode('utf-8'), e_hex.encode('utf-8'), n_hex.encode('utf-8'), encrypt_message_hex_out, BUFFER_SIZE)
     return encrypt_message_hex_out.value.decode('utf-8')
 
-# --- Configuration du client réseau ---
-# REMPLACEZ '127.0.0.1' par l'adresse IP du PC serveur !
-SERVER_HOST = '127.0.0.1' 
+# REMPLACEZ '192.168.0.141' par l'adresse IP du PC serveur !
+SERVER_HOST = '192.168.0.141' 
 SERVER_PORT = 65432
 
 def load_public_keys():
@@ -51,34 +46,27 @@ def load_public_keys():
 def run_client():
     n_val, e_val = load_public_keys()
     
-    # Message à chiffrer
     original_message = "Bonjour Serveur, ceci est un message super secret !"
     print(f"\nMessage original : '{original_message}'")
 
-    # Conversion du message en hexadécimal (comme dans votre `rsa_server.py` initial)
     original_msg_hex = original_message.encode('utf-8').hex()
     print(f"Message converti en hex : {original_msg_hex}")
 
-    # Chiffrement du message avec la clé publique du serveur
     encrypted_msg_hex = rsa_encrypt_python(original_msg_hex, e_val, n_val)
     print(f"Message chiffré (hex) : {encrypted_msg_hex[:50]}...")
 
-    # Préparation de la requête JSON
     request_data = {
         'operation': 'decrypt',
         'data': encrypted_msg_hex
     }
     
     try:
-        # Connexion au serveur
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.connect((SERVER_HOST, SERVER_PORT))
             print(f"Connecté au serveur à {SERVER_HOST}:{SERVER_PORT}")
             
-            # Envoi de la requête
             s.sendall(json.dumps(request_data).encode('utf-8'))
             
-            # Réception de la réponse
             response_data = s.recv(4096)
             response = json.loads(response_data.decode('utf-8'))
             
