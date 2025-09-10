@@ -6,6 +6,7 @@
 *.dylib
 test_rsa
 test_rsa.exe
+main.c
 
 # Répertoires de build
 build/
