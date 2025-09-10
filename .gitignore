@@ -1,0 +1,25 @@
+# Fichiers compilés
+*.o
+*.so
+*.exe
+*.dll
+*.dylib
+test_rsa
+test_rsa.exe
+
+# Répertoires de build
+build/
+dist/
+*.egg-info/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
