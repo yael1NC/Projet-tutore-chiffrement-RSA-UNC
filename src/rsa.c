@@ -1,20 +1,22 @@
 #include "rsa.h"
-
-        
+    
+// Generate a random number of 4096 bits
 void generate_random_nbr(mpz_t result) {
     char buf[512]; // creation d'un buffer avec 512 octets, donc 4096 bits
-    randombytes_buf(buf, (512)); // Nombre aleatoire dedans
+    randombytes_buf(buf, (512)); 
 
     mpz_import(result, 512, 1, 1, 1, 0, buf); 
 
     sodium_memzero(buf, 512);
 }
 
-int is_first(mpz_t n) {
+// Return 0 if n is probably prime, 1 if n is not prime
+int is_prime(mpz_t n) {
     gmp_randstate_t state;
     gmp_randinit_default(state);
     gmp_randseed_ui(state, (unsigned long)time(NULL));
 
+    if(mpz_tstbit(n, 0) == 0) return 0;
     if(mpz_cmp_ui(n, 2) < 0) return 0;
     if(mpz_even_p(n)) return 0;
 
@@ -35,6 +37,7 @@ int is_first(mpz_t n) {
     return 1;
 }
 
+// Return 0 if n is probably prime, 1 if n is not prime
 int miller_rabin(mpz_t n, mpz_t a) {
     int s = 0;
 
@@ -84,13 +87,16 @@ int miller_rabin(mpz_t n, mpz_t a) {
     return 1;
 }
 
+// Generate a prime number of 4096 bits
 void generate_prime_nbr(mpz_t prime) {
     generate_random_nbr(prime);
-    while(!(is_first(prime))) {
+
+    while(!(is_prime(prime))) {
         generate_random_nbr(prime);
     }
 }
 
+// Generate RSA keys (n, d) and return them as hex strings
 void generate_rsa_keys(char* n_hex_out, char* d_hex_out, size_t buffer_size) {
     mpz_t p, q, n, e, d, phi, pbis, qbis;
 
@@ -142,7 +148,8 @@ void generate_rsa_keys(char* n_hex_out, char* d_hex_out, size_t buffer_size) {
     mpz_clear(qbis);
 }
 
-void rsa_encrypt_string(const char* non_encrypt, const char* e_hex, const char* n_hex, char* encrypt_message_hex, size_t buffer_size) {
+// RSA encryption with choice of exponentiation algorithm
+void rsa_encrypt_string(const char* non_encrypt, const char* e_hex, const char* n_hex, char* encrypt_message_hex, size_t buffer_size, int algo_choice) {
     mpz_t m, c, e, n;
 
     mpz_init(m);
@@ -156,8 +163,27 @@ void rsa_encrypt_string(const char* non_encrypt, const char* e_hex, const char* 
     
     mpz_import(m, strlen(non_encrypt), 1, 1, 0, 0, non_encrypt);
 
-    // c = m^e mod n
-    mpz_powm(c, m, e, n);
+    // Chiffrement : c = m^e mod n
+    switch(algo_choice) {
+        case 1:
+            square_and_multiply(c, m, e, n);
+            break;
+        case 2:
+            square_and_multiply_always(c, m, e, n);
+            break;
+        case 3:
+            montgomery_ladder(c, m, e, n);
+            break;
+        case 4:
+            semi_interleaved_ladder(c, m, e, n);
+            break;
+        case 5:
+            fully_interleaved_ladder(c, m, e, n);
+            break;
+        case 6:
+            mpz_powm(c, m, e, n);
+            break;
+    }
 
     char* hex = mpz_get_str(NULL, 16, c);
     strncpy(encrypt_message_hex, hex, buffer_size - 1);
@@ -167,7 +193,7 @@ void rsa_encrypt_string(const char* non_encrypt, const char* e_hex, const char* 
     mpz_clears(m, c, e, n);
 }
 
-
+// RSA decryption with choice of exponentiation algorithm
 void rsa_decrypt_string(const char* encrypt_message_hex, const char* d_hex, const char* n_hex, char* non_encrypt, size_t buffer_size, int algo_choice) {
     mpz_t c, m, d, n;
     mpz_inits(c, m, d, n, NULL);
@@ -177,7 +203,6 @@ void rsa_decrypt_string(const char* encrypt_message_hex, const char* d_hex, cons
     mpz_set_str(n, n_hex, 16);
 
     // Dechiffrement : m = c^d mod n
-    // Utilisation d'un switch pour sélectionner l'algorithme
     switch(algo_choice) {
         case 1:
             square_and_multiply(m, c, d, n);
@@ -194,7 +219,7 @@ void rsa_decrypt_string(const char* encrypt_message_hex, const char* d_hex, cons
         case 5:
             fully_interleaved_ladder(m, c, d, n);
             break;
-        default: // Par défaut, utilise la fonction la plus optimisée de GMP
+        case 6:
             mpz_powm(m, c, d, n);
             break;
     }
@@ -211,7 +236,7 @@ void rsa_decrypt_string(const char* encrypt_message_hex, const char* d_hex, cons
     mpz_clears(c, m, d, n, NULL);
 }
 
-
+// Algorithm 1 Square and multiply for the modular exponentiation
 void square_and_multiply(mpz_t result, const mpz_t a, const mpz_t k, const mpz_t n) {
     mpz_t x, temp;
     mpz_inits(x, temp, NULL);
@@ -220,9 +245,8 @@ void square_and_multiply(mpz_t result, const mpz_t a, const mpz_t k, const mpz_t
 
     size_t bit_length = mpz_sizeinbase(k, 2);
 
-    // CORRECTION: Utilisez size_t au lieu de long, et gérez le underflow
     for (size_t i = bit_length; i > 0; i--) {
-        size_t bit_index = i - 1; // Décalage pour avoir l'index correct
+        size_t bit_index = i - 1; 
         
         // x = x^2 mod n
         mpz_mul(temp, x, x);
@@ -239,6 +263,7 @@ void square_and_multiply(mpz_t result, const mpz_t a, const mpz_t k, const mpz_t
     mpz_clears(x, temp, NULL);
 }
 
+// Algorithm 2 Square and multiply always for the modular exponentiation
 void square_and_multiply_always(mpz_t result, const mpz_t a, const mpz_t k, const mpz_t n) {
     mpz_t x, y, temp;
     mpz_inits(x, y, temp, NULL);
@@ -247,7 +272,6 @@ void square_and_multiply_always(mpz_t result, const mpz_t a, const mpz_t k, cons
 
     size_t bit_length = mpz_sizeinbase(k, 2);
 
-    // CORRECTION: Même problème ici
     for (size_t i = bit_length; i > 0; i--) {
         size_t bit_index = i - 1;
         
@@ -255,7 +279,7 @@ void square_and_multiply_always(mpz_t result, const mpz_t a, const mpz_t k, cons
         mpz_mod(x, temp, n);
 
         mpz_mul(temp, x, a);
-        mpz_mod(temp, temp, n); // AJOUT: il faut faire le modulo ici aussi
+        mpz_mod(temp, temp, n);
 
         if (mpz_tstbit(k, bit_index)) {
             mpz_set(x, temp); 
@@ -268,219 +292,301 @@ void square_and_multiply_always(mpz_t result, const mpz_t a, const mpz_t k, cons
     mpz_clears(x, y, temp, NULL);
 }
 
+// Algorithm 3 Montgomery ladder for the modular exponentiation
 void montgomery_ladder(mpz_t result, const mpz_t a, const mpz_t k, const mpz_t n) {
-    mpz_t x, y, t1, t2, t3;
-    mpz_inits(x, y, t1, t2, t3, NULL);
+    mpz_t x, y, temp;
+    mpz_inits(x, y, temp, NULL);
 
+    // 1: x = 1
     mpz_set_ui(x, 1);
+    
+    // 2: y = a mod n
     mpz_mod(y, a, n);
 
+    // 3: pour i = d à 0
     size_t bit_length = mpz_sizeinbase(k, 2);
-
-    // CORRECTION: Même problème ici
+    
     for (size_t i = bit_length; i > 0; i--) {
-        size_t bit_index = i - 1;
-        int bit = mpz_tstbit(k, bit_index);
-
-        mpz_mul(t1, x, y); 
-        mpz_mod(t1, t1, n); // x*y mod n
-
-        mpz_mul(t2, x, x); 
-        mpz_mod(t2, t2, n);// x^2 mod n
+        size_t bit_index = i - 1;  // bit_index va de (bit_length-1) à 0
         
-        mpz_mul(t3, y, y); 
-        mpz_mod(t3, t3, n); // y^2 mod n
+        if (mpz_tstbit(k, bit_index)) { // si k[i] = 1
+            
+            mpz_mul(temp, x, y);     // x = xy mod n
+            mpz_mod(x, temp, n);
 
-        if (bit) {
-            //x = x*y, y = y^2
-            mpz_set(x, t1);
-            mpz_set(y, t3);
+            mpz_mul(temp, y, y);     // y = y*y mod n
+            mpz_mod(y, temp, n);
         } else {
-            //y = x*y, x = x^2
-            mpz_set(y, t1);
-            mpz_set(x, t2);
+            mpz_mul(temp, x, y);     // y = xy mod n
+            mpz_mod(y, temp, n);
+
+            mpz_mul(temp, x, x);     // x = x*x mod n
+            mpz_mod(x, temp, n);
         }
     }
 
     mpz_set(result, x);
-    mpz_clears(x, y, t1, t2, t3, NULL);
+    mpz_clears(x, y, temp, NULL);
 }
 
+
+// Algorithm 13 Semi-interleaved ladder for the modular exponentiation
 void semi_interleaved_ladder(mpz_t result, const mpz_t a, const mpz_t k, const mpz_t n) {
-    mpz_t x, y, m, c1, c2, z, temp1, temp2;
-    mpz_inits(x, y, m, c1, c2, z, temp1, temp2, NULL);
+    mpz_t x, y, z, m, c1, c2, temp1, temp2;
+    mpz_inits(x, y, z, m, c1, c2, temp1, temp2, NULL);
 
     gmp_randstate_t state;
     gmp_randinit_default(state);
     gmp_randseed_ui(state, (unsigned long)time(NULL));
 
-    // 1: x ← 1
+    // 1: x = 1
     mpz_set_ui(x, 1);
-    // 2: y ← a mod n
+    
+    // 2: y = a mod n
     mpz_mod(y, a, n);
-    
-    // 3: m ← random([0, n − 1])
+
+    // 3: m = random([0, n−1])
     mpz_urandomm(m, state, n);
-    
-    // 4: c1 ← ma mod n
+
+    // 4: c1 = ma mod n
     mpz_mul(c1, m, a);
     mpz_mod(c1, c1, n);
 
-    // 5: c2 ← 1 − (c1a + m) mod n
-    mpz_mul(temp1, c1, a);      // c1*a
-    mpz_add(temp1, temp1, m);     // c1*a + m
-    mpz_ui_sub(c2, 1, temp1);   // 1 - (c1*a + m)
-    mpz_mod(c2, c2, n);           // mod n
+    // 5: c2 = 1 − (c1a + m) mod n
+    mpz_mul(temp1, c1, a);     // c1 * a
+    mpz_add(temp1, temp1, m);  // c1 * a + m
+    mpz_set_ui(temp2, 1);      // temp2 = 1
+    mpz_sub(temp2, temp2, temp1); // 1 - (c1*a + m)
+    mpz_mod(c2, temp2, n);     // c2 = 1 - (c1*a + m) mod n
 
     size_t bit_length = mpz_sizeinbase(k, 2);
-    
-    // CORRECTION: Même problème ici
-    for (size_t i = bit_length; i > 0; i--) {
-        size_t bit_index = i - 1;
+    size_t d = bit_length - 1;
+
+    // 6: for i = d to 0 do
+    for (size_t i = d; i != SIZE_MAX; i--) { 
         
-        if (mpz_tstbit(k, bit_index)) { // k[bit_index] == 1
-            // z ← y² mod n
+        // 7: if k[i] = 1 then
+        if (mpz_tstbit(k, i)) {
+            // 8: z = y*y mod n
             mpz_mul(z, y, y);
             mpz_mod(z, z, n);
-            // x ← c1(x² + z) + c2xy mod n
-            mpz_mul(temp1, x, x);       // x²
-            mpz_add(temp1, temp1, z);   // x² + z
-            mpz_mul(temp1, temp1, c1);  // c1(x² + z)
-            mpz_mul(temp2, c2, x);      // c2*x
-            mpz_mul(temp2, temp2, y);   // c2*x*y
-            mpz_add(x, temp1, temp2);   // addition finale
-            mpz_mod(x, x, n);
-            // y ← z
+
+            // 9: x = c1(x*x + z) + c2*x*y mod n
+            mpz_mul(temp1, x, x);          // x*x
+            mpz_add(temp1, temp1, z);      // x*x + z
+            mpz_mul(temp1, temp1, c1);     // c1(x*x + z)
+
+            mpz_mul(temp2, c2, x);         // c2 * x
+            mpz_mul(temp2, temp2, y);      // c2 * x * y
+
+            mpz_add(temp1, temp1, temp2);  // c1(x*x + z) + c2*x*y
+            mpz_mod(x, temp1, n);
+            
+            // 10: y = z
             mpz_set(y, z);
-        } else { // k[bit_index] == 0
-            // z ← x² mod n
+            
+        } else {
+            // 11: else
+            // 12: z = x*x mod n
             mpz_mul(z, x, x);
             mpz_mod(z, z, n);
-            // y ← c1(y² + z) + c2yx mod n
-            mpz_mul(temp1, y, y);       // y²
-            mpz_add(temp1, temp1, z);   // y² + z
-            mpz_mul(temp1, temp1, c1);  // c1(y² + z)
-            mpz_mul(temp2, c2, y);      // c2*y
-            mpz_mul(temp2, temp2, x);   // c2*y*x
-            mpz_add(y, temp1, temp2);   // addition finale
-            mpz_mod(y, y, n);
-            // x ← z
+
+            // 13: y = c1(y*y + z) + c2*y*x mod n 
+            mpz_mul(temp1, y, y);          // y*y
+            mpz_add(temp1, temp1, z);      // y*y + z
+            mpz_mul(temp1, temp1, c1);     // c1(y*y + z)
+
+            mpz_mul(temp2, c2, y);         // c2 * y
+            mpz_mul(temp2, temp2, x);      // c2 * y * x
+
+            mpz_add(temp1, temp1, temp2);  // c1(y*y + z) + c2*y*x
+            mpz_mod(y, temp1, n);
+            
+            // 14: x = z
             mpz_set(x, z);
         }
+        // 15: end if
     }
+    // 16: end for
 
+    // 17: return x
     mpz_set(result, x);
 
-    mpz_clears(x, y, m, c1, c2, z, temp1, temp2, NULL);
+    mpz_clears(x, y, z, m, c1, c2, temp1, temp2, NULL);
     gmp_randclear(state);
 }
 
-void fully_interleaved_ladder(mpz_t result, const mpz_t a, const mpz_t k, const mpz_t n) {
-    mpz_t l, v0, v2, v3, u1, u2, u3, c0, c1, c2, c3, x, y, z, temp;
-    mpz_inits(l, v0, v2, v3, u1, u2, u3, c0, c1, c2, c3, x, y, z, temp, NULL);
 
+// Extended Euclidean Algorithm to find gcd and coefficients
+void extended_euclidean(mpz_t gcd, mpz_t u, const mpz_t a, const mpz_t n) {
+    mpz_t r0, r1, u0, u1, v0, v1, temp, q;
+    mpz_inits(r0, r1, u0, u1, v0, v1, temp, q, NULL);
+    
+    mpz_set(r0, n);    // r0 = n
+    mpz_set(r1, a);    // r1 = a
+    mpz_set_ui(u0, 0); // u0 = 0
+    mpz_set_ui(u1, 1); // u1 = 1
+    mpz_set_ui(v0, 1); // v0 = 1
+    mpz_set_ui(v1, 0); // v1 = 0
+    
+    while (mpz_cmp_ui(r1, 0) != 0) {
+        // q = r0 / r1
+        mpz_fdiv_q(q, r0, r1);
+        
+        // r0, r1 = r1, r0 - q*r1
+        mpz_mul(temp, q, r1);
+        mpz_sub(temp, r0, temp);
+        mpz_set(r0, r1);
+        mpz_set(r1, temp);
+        
+        // u0, u1 = u1, u0 - q*u1
+        mpz_mul(temp, q, u1);
+        mpz_sub(temp, u0, temp);
+        mpz_set(u0, u1);
+        mpz_set(u1, temp);
+        
+        // v0, v1 = v1, v0 - q*v1
+        mpz_mul(temp, q, v1);
+        mpz_sub(temp, v0, temp);
+        mpz_set(v0, v1);
+        mpz_set(v1, temp);
+    }
+    
+    mpz_set(gcd, r0);  // gcd
+    mpz_set(u, u0);    // coefficient u
+    
+    mpz_clears(r0, r1, u0, u1, v0, v1, temp, q, NULL);
+}
+
+// Algorithm 14 Fully-interleaved ladder for the modular exponentiation
+void fully_interleaved_ladder(mpz_t result, const mpz_t a, const mpz_t k, const mpz_t n) {
+    mpz_t l, v0, v2, v3, d1, d2, d3, u1, u2, u3;
+    mpz_t c0, c1, c2, c3, x, y, z;
+    mpz_t temp1, temp2, temp3, n_minus_2;
+    mpz_inits(l, v0, v2, v3, d1, d2, d3, u1, u2, u3, NULL);
+    mpz_inits(c0, c1, c2, c3, x, y, z, NULL);
+    mpz_inits(temp1, temp2, temp3, n_minus_2, NULL);
+    
     gmp_randstate_t state;
     gmp_randinit_default(state);
     gmp_randseed_ui(state, (unsigned long)time(NULL));
-
-    // Pré-computation pour trouver une constante l valide
-    mpz_t n_minus_2;
-    mpz_init_set(n_minus_2, n);
-    mpz_sub_ui(n_minus_2, n_minus_2, 2);
-
-    int l_is_valid = 0;
-    while (!l_is_valid) {
-        mpz_urandomm(l, state, n_minus_2); // l dans [0, n-3]
-        mpz_add_ui(l, l, 2);               // l dans [2, n-1]
+    
+    mpz_sub_ui(n_minus_2, n, 2);  // n - 2
+    
+    // 1: do
+    do {
+        // 2: l = random([2, n − 2] \ {a})
+        do {
+            mpz_urandomm(temp1, state, n_minus_2);  // [0, n-3]
+            mpz_add_ui(l, temp1, 2);                // [2, n-1]
+        } while (mpz_cmp(l, a) == 0);  // Exclure a
         
-        if (mpz_cmp(l, a) == 0) continue; // l ne doit pas être égal à a
-
-        int inv1 = mpz_invert(u1, l, n); // inv(l)
+        // 3: v0 = l − a mod n
+        mpz_sub(v0, l, a);
+        mpz_mod(v0, v0, n);
         
+        // 4: (d1, u1) = EEA(l, n)
+        extended_euclidean(d1, u1, l, n);
+        
+        // 5: v2 = l*l − 1 mod n
         mpz_mul(v2, l, l);
         mpz_sub_ui(v2, v2, 1);
-        int inv2 = mpz_invert(u2, v2, n); // inv(l^2 - 1)
-
-        mpz_mul(v3, v2, l); // l^3 - l
-        mpz_add_ui(v3, v3, 1); // l^3
-        mpz_sub(v3, v3, a); // l^3 - a
-        int inv3 = mpz_invert(u3, v3, n); // inv(l^3 - a)
-
-        if (inv1 && inv2 && inv3) {
-            l_is_valid = 1;
-        }
-    }
-    mpz_clear(n_minus_2);
-
-    // Calcul des constantes c0, c1, c2, c3
-    mpz_sub(v0, l, a); // l - a
-
-    mpz_mul(c0, u1, u2);
-    mpz_mul(c0, c0, v3);
+        mpz_mod(v2, v2, n);
+        
+        // 6: (d2, u2) = EEA(v2, n)
+        extended_euclidean(d2, u2, v2, n);
+        
+        // 7: v3 = l^3 − a mod n
+        mpz_mul(temp1, l, l);
+        mpz_mul(v3, temp1, l);  //l^3
+        mpz_sub(v3, v3, a);
+        mpz_mod(v3, v3, n);
+        
+        // 8: (d3, u3) = EEA(v3, n)
+        extended_euclidean(d3, u3, v3, n);
+        
+    // 9: while v0 mod n = 0 ∨ d1 != 1 ∨ d2 != 1 ∨ d3 != 1
+    } while (mpz_cmp_ui(v0, 0) == 0 ||  mpz_cmp_ui(d1, 1) != 0 || mpz_cmp_ui(d2, 1) != 0 || mpz_cmp_ui(d3, 1) != 0);
+    
+    // 10: c0 = u1*u2*v3 mod n
+    mpz_mul(temp1, u1, u2);
+    mpz_mul(c0, temp1, v3);
     mpz_mod(c0, c0, n);
-
-    mpz_neg(c1, v0);
-    mpz_mul(c1, c1, u2);
+    
+    // 11: c1 = −v0*u2 mod n
+    mpz_mul(temp1, v0, u2);
+    mpz_neg(c1, temp1);
     mpz_mod(c1, c1, n);
-
-    mpz_mul(c2, a, v2);
-    mpz_mul(c2, c2, u3);
+    
+    // 12: c2 = a*v2*u3 mod n
+    mpz_mul(temp1, a, v2);
+    mpz_mul(c2, temp1, u3);
     mpz_mod(c2, c2, n);
     
-    mpz_mul(c3, l, v0);
-    mpz_mul(c3, c3, u3);
+    // 13: c3 = l*v0*u3 mod n
+    mpz_mul(temp1, l, v0);
+    mpz_mul(c3, temp1, u3);
     mpz_mod(c3, c3, n);
-
-    // Initialisation
+    
+    // 14: x = 1
     mpz_set_ui(x, 1);
+    
+    // 15: y = l
     mpz_set(y, l);
-
-    // Boucle principale - CORRECTION: Même problème ici
+    
     size_t bit_length = mpz_sizeinbase(k, 2);
-    for (size_t i = bit_length; i > 0; i--) {
-        size_t bit_index = i - 1;
+    size_t d = bit_length - 1;
+    
+    // 16: for i = d to 0 do
+    for (size_t i = d; i != SIZE_MAX; i--) {
         
-        if (mpz_tstbit(k, bit_index)) { // k[bit_index] == 1
+        // 17: if k[i] = 1 then
+        if (mpz_tstbit(k, i)) {
+            // 18: z = y*y mod n
             mpz_mul(z, y, y);
-            mpz_mod(z, z, n); // z = y^2
+            mpz_mod(z, z, n);
             
-            // x <- c0*x*y + c1*z
-            mpz_mul(temp, c0, x);
-            mpz_mul(temp, temp, y);
-            mpz_mul(x, c1, z);
-            mpz_add(x, x, temp);
-            mpz_mod(x, x, n);
+            // 19: x = c0*xy + c1*z mod n
+            mpz_mul(temp1, c0, x);
+            mpz_mul(temp1, temp1, y);  // c0*xy
+            mpz_mul(temp2, c1, z);     // c1*z
+            mpz_add(temp1, temp1, temp2);
+            mpz_mod(x, temp1, n);
 
-            // y <- c2*z + c3*x (utilise le nouveau x)
-            mpz_mul(temp, c2, z);
-            mpz_mul(y, c3, x);
-            mpz_add(y, y, temp);
-            mpz_mod(y, y, n);
-
-        } else { // k[bit_index] == 0
+            // 20: y = c2*z + c3*x mod n
+            mpz_mul(temp1, c2, z);     // c2*z
+            mpz_mul(temp2, c3, x);     // c3*x
+            mpz_add(temp1, temp1, temp2);
+            mpz_mod(y, temp1, n);
+            
+        } else {
+            // 21: else
+            // 22: z = x*x mod n
             mpz_mul(z, x, x);
-            mpz_mod(z, z, n); // z = x^2
+            mpz_mod(z, z, n);
 
-            // y <- c0*y*x + c1*z
-            mpz_mul(temp, c0, y);
-            mpz_mul(temp, temp, x);
-            mpz_mul(y, c1, z);
-            mpz_add(y, y, temp);
-            mpz_mod(y, y, n);
+            // 23: y = c0*y*x + c1*z mod n
+            mpz_mul(temp1, c0, y);
+            mpz_mul(temp1, temp1, x);  // c0*y*x
+            mpz_mul(temp2, c1, z);     // c1*z
+            mpz_add(temp1, temp1, temp2);
+            mpz_mod(y, temp1, n);
             
-            // x <- c2*z + c3*y (utilise le nouveau y)
-            mpz_mul(temp, c2, z);
-            mpz_mul(x, c3, y);
-            mpz_add(x, x, temp);
-            mpz_mod(x, x, n);
+            // 24: x = c2*z + c3*y mod n
+            mpz_mul(temp1, c2, z);     // c2*z
+            mpz_mul(temp2, c3, y);     // c3*y
+            mpz_add(temp1, temp1, temp2);
+            mpz_mod(x, temp1, n);
         }
+        // 25: end if
     }
-
+    // 26: end for
+    
+    // 27: return x
     mpz_set(result, x);
     
-    mpz_clears(l, v0, v2, v3, u1, u2, u3, c0, c1, c2, c3, x, y, z, temp, NULL);
+    mpz_clears(l, v0, v2, v3, d1, d2, d3, u1, u2, u3, NULL);
+    mpz_clears(c0, c1, c2, c3, x, y, z, NULL);
+    mpz_clears(temp1, temp2, temp3, n_minus_2, NULL);
     gmp_randclear(state);
 }
-
-// comment verifier que p et q premier ?
-// verifier que p et q pas pair par le dernier bit 1 peut gagner beacoup de temps
