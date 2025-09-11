@@ -154,7 +154,7 @@ int main() {
 
     printf("Original:  %s\n", message);
     printf("Chiffre:   %s\n", encrypted);
-    printf("Déchiffre: %s\n", decrypted);
+    printf("Dechiffre: %s\n", decrypted);
     
     return 0;
 }
