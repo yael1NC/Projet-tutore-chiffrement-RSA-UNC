@@ -147,8 +147,8 @@ int main() {
 //                                                                            ^ Choisir l'algorithme
 
     printf("Original:  %s\n", message);
-    printf("Chiffré:   %s\n", encrypted);
-    printf("Déchiffré: %s\n", decrypted);
+    printf("Chiffre:   %s\n", encrypted);
+    printf("Déchiffre: %s\n", decrypted);
     
     return 0;
 }
