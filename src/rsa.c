@@ -152,10 +152,7 @@ void generate_rsa_keys(char* n_hex_out, char* d_hex_out, size_t buffer_size) {
 void rsa_encrypt_string(const char* non_encrypt, const char* e_hex, const char* n_hex, char* encrypt_message_hex, size_t buffer_size, int algo_choice) {
     mpz_t m, c, e, n;
 
-    mpz_init(m);
-    mpz_init(c);
-    mpz_init(e);
-    mpz_init(n);
+    mpz_inits(m, c, e, n, NULL);
 
     mpz_set_str(e, e_hex, 16);
     mpz_set_str(n, n_hex, 16);
@@ -190,7 +187,7 @@ void rsa_encrypt_string(const char* non_encrypt, const char* e_hex, const char* 
     encrypt_message_hex[buffer_size - 1] = '\0';
 
     free(hex);
-    mpz_clears(m, c, e, n);
+    mpz_clears(m, c, e, n, NULL);
 }
 
 // RSA decryption with choice of exponentiation algorithm
