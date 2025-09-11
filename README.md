@@ -35,9 +35,7 @@ void semi_interleaved_ladder(mpz_t result, const mpz_t a, const mpz_t k, const m
 void fully_interleaved_ladder(mpz_t result, const mpz_t a, const mpz_t k, const mpz_t n)
 ```
 
-# 🧮 Algorithmes RSA Chiffrement/Déchiffrement
-
-
+## 🧮 Algorithmes RSA Chiffrement/Déchiffrement
 ### 1. Chiffrement
 
 ```c
@@ -54,9 +52,9 @@ void rsa_encrypt_string(const char* non_encrypt, const char* e_hex, const char* 
 - `taille_buffer` : Taille du buffer de sortie
 - `choix_algo` : Sélection de la variante d'algorithme
 
-```c
-
 ### 2. Déchiffrement
+
+```c
 void rsa_decrypt_string(const char* message_chiffre_hex,  const char* d_hex, const char* n_hex, char* texte_clair, size_t taille_buffer, int choix_algo);
 ```
 
