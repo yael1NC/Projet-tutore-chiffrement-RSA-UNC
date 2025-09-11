@@ -12,6 +12,7 @@ main.c
 build/
 dist/
 *.egg-info/
+.vscode/
 
 # Python
 __pycache__/
