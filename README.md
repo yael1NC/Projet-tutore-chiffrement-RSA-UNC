@@ -55,7 +55,7 @@ void rsa_encrypt_string(const char* non_encrypt, const char* e_hex, const char* 
 ### 2. Déchiffrement
 
 ```c
-void rsa_decrypt_string(const char* message_chiffre_hex,  const char* d_hex, const char* n_hex, char* texte_clair, size_t taille_buffer, int choix_algo);
+void rsa_decrypt_string(const char* encrypt_message_hex, const char* d_hex, const char* n_hex, char* non_encrypt, size_t buffer_size, int algo_choice);
 ```
 
 **Paramètres :**
