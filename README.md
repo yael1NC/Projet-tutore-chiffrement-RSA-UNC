@@ -128,6 +128,12 @@ printf("Message déchiffré: %s\n", decrypted);
 #include <stdio.h>
 
 int main() {
+
+    if (sodium_init() < 0) {
+        printf("ERREUR: Impossible d'initialiser libsodium\n");
+        return 1;
+    }
+
     // Génération des clés
     char n_hex[4096], d_hex[4096];
     generate_rsa_keys(n_hex, d_hex, sizeof(n_hex));
