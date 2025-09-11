@@ -19,6 +19,7 @@ __pycache__/
 *$py.class
 *.so
 .Python
+test_rsa.py
 env/
 venv/
 ENV/

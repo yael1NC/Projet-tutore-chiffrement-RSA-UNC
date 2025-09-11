@@ -1,6 +1,5 @@
 # Implémentation Sécurisée du Schéma de Chiffrement RSA
 
-Une implémentation complète du chiffrement RSA en C.
 
 ## 🔐 Fonctionnalités
 
@@ -35,6 +34,40 @@ void semi_interleaved_ladder(mpz_t result, const mpz_t a, const mpz_t k, const m
 ```c
 void fully_interleaved_ladder(mpz_t result, const mpz_t a, const mpz_t k, const mpz_t n)
 ```
+
+# 🧮 Algorithmes RSA Chiffrement/Déchiffrement
+
+
+### 1. Chiffrement
+
+```c
+void rsa_encrypt_string(const char* non_encrypt, const char* e_hex, const char* n_hex, char* encrypt_message_hex, size_t buffer_size, int algo_choice);
+```
+
+**Description :** Chiffre une chaîne de caractères en utilisant le chiffrement RSA avec clé publique.
+
+**Paramètres :**
+- `texte_clair` : Le message original à chiffrer
+- `e_hex` : Exposant public en format hexadécimal
+- `n_hex` : Module en format hexadécimal
+- `message_chiffre_hex` : Buffer de sortie pour le message chiffré (hexadécimal)
+- `taille_buffer` : Taille du buffer de sortie
+- `choix_algo` : Sélection de la variante d'algorithme
+
+```c
+
+### 2. Déchiffrement
+void rsa_decrypt_string(const char* message_chiffre_hex,  const char* d_hex, const char* n_hex, char* texte_clair, size_t taille_buffer, int choix_algo);
+```
+
+**Paramètres :**
+- `message_chiffre_hex` : Le message chiffré en format hexadécimal
+- `d_hex` : Exposant privé en format hexadécimal
+- `n_hex` : Module en format hexadécimal
+- `texte_clair` : Buffer de sortie pour le message déchiffré
+- `taille_buffer` : Taille du buffer de sortie
+- `choix_algo` : Sélection de la variante d'algorithme
+
 
 ## 🛠️ Compilation et Dépendances
 
