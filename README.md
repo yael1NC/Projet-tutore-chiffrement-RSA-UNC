@@ -153,6 +153,9 @@ int main() {
     return 0;
 }
 ```
+``
+gcc -Wall -Wextra -g -O0 main.c rsa.c -o test_rsa -lgmp -lsodium
+``
 
 ## 🔒 Sécurité
 
