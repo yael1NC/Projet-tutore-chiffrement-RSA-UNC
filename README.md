@@ -45,12 +45,12 @@ void rsa_encrypt_string(const char* non_encrypt, const char* e_hex, const char* 
 **Description :** Chiffre une chaîne de caractères en utilisant le chiffrement RSA avec clé publique.
 
 **Paramètres :**
-- `texte_clair` : Le message original à chiffrer
+- `non_encrypt` : Le message original à chiffrer
 - `e_hex` : Exposant public en format hexadécimal
 - `n_hex` : Module en format hexadécimal
-- `message_chiffre_hex` : Buffer de sortie pour le message chiffré (hexadécimal)
-- `taille_buffer` : Taille du buffer de sortie
-- `choix_algo` : Sélection de la variante d'algorithme
+- `encrypt_message_hex` : Buffer de sortie pour le message chiffré (hexadécimal)
+- `buffer_size` : Taille du buffer de sortie
+- `algo_choice` : Sélection de la variante d'algorithme
 
 ### 2. Déchiffrement
 
@@ -59,12 +59,12 @@ void rsa_decrypt_string(const char* encrypt_message_hex, const char* d_hex, cons
 ```
 
 **Paramètres :**
-- `message_chiffre_hex` : Le message chiffré en format hexadécimal
+- `encrypt_message_hex` : Le message chiffré en format hexadécimal
 - `d_hex` : Exposant privé en format hexadécimal
 - `n_hex` : Module en format hexadécimal
-- `texte_clair` : Buffer de sortie pour le message déchiffré
-- `taille_buffer` : Taille du buffer de sortie
-- `choix_algo` : Sélection de la variante d'algorithme
+- `non_encrypt` : Buffer de sortie pour le message déchiffré
+- `buffer_size` : Taille du buffer de sortie
+- `algo_choice` : Sélection de la variante d'algorithme
 
 
 ## 🛠️ Compilation et Dépendances
@@ -130,7 +130,7 @@ printf("Message déchiffré: %s\n", decrypted);
 int main() {
 
     if (sodium_init() < 0) {
-        printf("ERREUR: Impossible d'initialiser libsodium\n");
+        printf("Impossible d'initialiser libsodium\n");
         return 1;
     }
 
@@ -142,12 +142,12 @@ int main() {
     const char* message = "Message secret!";
     const char* e_hex = "10001";
     
-    // Chiffrement avec Fully-Interleaved Ladder
+    // Chiffrement avec Fully-Interleaved Ladder pour exemple
     char encrypted[4096];
     rsa_encrypt_string(message, e_hex, n_hex, encrypted, sizeof(encrypted), 5);
 //                                                                          ^ Choisir l'algorithme
     
-    // Déchiffrement
+    // Dechiffrement
     char decrypted[256];
     rsa_decrypt_string(encrypted, d_hex, n_hex, decrypted, sizeof(decrypted), 5);
 //                                                                            ^ Choisir l'algorithme
