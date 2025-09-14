@@ -133,9 +133,9 @@ class SecureKeyManager:
                 json.dump(encrypted_data, f, indent=2)
             os.chmod(self.encrypted_key_file, 0o600)
             
-            print("✅ Clés RSA chiffrées et sauvegardées avec succès")
-            print(f"📁 Fichier chiffré: {self.encrypted_key_file}")
-            print(f"🔑 Fichier sel: {self.salt_file}")
+            print("Clés RSA chiffrées et sauvegardées avec succès")
+            print(f"Fichier chiffré: {self.encrypted_key_file}")
+            print(f"Fichier sel: {self.salt_file}")
             
             # Supprimer les clés en clair (optionnel)
             self._cleanup_plaintext_keys()
@@ -143,7 +143,7 @@ class SecureKeyManager:
             return True
             
         except Exception as e:
-            print(f"❌ Erreur lors du chiffrement des clés: {e}")
+            print(f"Erreur lors du chiffrement des clés: {e}")
             return False
     
     def decrypt_keys(self, password: str = None) -> tuple:
@@ -189,11 +189,11 @@ class SecureKeyManager:
             e_val = self._unpad_data(key_data['e'])
             d_val = self._unpad_data(key_data['d'])
             
-            print("✅ Clés RSA déchiffrées avec succès")
+            print("Clés RSA déchiffrées avec succès")
             return n_val, e_val, d_val
             
         except Exception as e:
-            print(f"❌ Erreur lors du déchiffrement: {e}")
+            print(f"Erreur lors du déchiffrement: {e}")
             raise
     
     def _cleanup_plaintext_keys(self):
@@ -212,9 +212,9 @@ class SecureKeyManager:
                     with open(file_path, 'wb') as f:
                         f.write(secrets.token_bytes(file_size))
                     os.remove(file_path)
-                    print(f"🗑️  Fichier en clair supprimé: {os.path.basename(file_path)}")
+                    print(f"Fichier en clair supprimé: {os.path.basename(file_path)}")
                 except Exception as e:
-                    print(f"⚠️  Impossible de supprimer {file_path}: {e}")
+                    print(f"Impossible de supprimer {file_path}: {e}")
     
     def has_encrypted_keys(self) -> bool:
         """Vérifie si des clés chiffrées existent"""
@@ -225,7 +225,7 @@ class SecureKeyManager:
         """Change le mot de passe de protection des clés"""
         try:
             if not self.has_encrypted_keys():
-                print("❌ Aucune clé chiffrée trouvée")
+                print("Aucune clé chiffrée trouvée")
                 return False
             
             # Déchiffrer avec l'ancien mot de passe
@@ -246,7 +246,7 @@ class SecureKeyManager:
             return success
             
         except Exception as e:
-            print(f"❌ Erreur lors du changement de mot de passe: {e}")
+            print(f"Erreur lors du changement de mot de passe: {e}")
             return False
     
     def export_public_key(self, output_file: str = None, password: str = None):
@@ -268,24 +268,24 @@ class SecureKeyManager:
             with open(output_file, 'w') as f:
                 json.dump(public_key_data, f, indent=2)
             
-            print(f"✅ Clé publique exportée vers: {output_file}")
+            print(f"Clé publique exportée vers: {output_file}")
             return True
             
         except Exception as e:
-            print(f"❌ Erreur lors de l'export: {e}")
+            print(f"Erreur lors de l'export: {e}")
             return False
     
     def get_key_info(self):
         """Affiche les informations sur les clés sans les déchiffrer"""
         try:
             if not self.has_encrypted_keys():
-                print("❌ Aucune clé chiffrée trouvée")
+                print("Aucune clé chiffrée trouvée")
                 return
             
             with open(self.encrypted_key_file, 'r') as f:
                 encrypted_data = json.load(f)
             
-            print("\n📋 Informations sur les clés chiffrées:")
+            print("\nInformations sur les clés chiffrées:")
             print("="*50)
             print(f"Version: {encrypted_data.get('version', 'Inconnue')}")
             print(f"Algorithme de chiffrement: {encrypted_data.get('cipher', 'Inconnu')}")
@@ -302,30 +302,30 @@ class SecureKeyManager:
             print(f"Permissions fichier sel: {oct(salt_stat.st_mode)[-3:]}")
             
         except Exception as e:
-            print(f"❌ Erreur lors de la lecture des informations: {e}")
+            print(f"Erreur lors de la lecture des informations: {e}")
 
 
 def main():
     """Fonction de test et démonstration"""
-    print("🔐 Gestionnaire de clés RSA sécurisé")
+    print("Gestionnaire de clés RSA sécurisé")
     print("="*40)
     
     key_manager = SecureKeyManager()
     
     # Exemple d'utilisation
     if key_manager.has_encrypted_keys():
-        print("📋 Clés chiffrées détectées")
+        print("Clés chiffrées détectées")
         key_manager.get_key_info()
         
         try:
             n, e, d = key_manager.decrypt_keys()
-            print(f"📄 Clé publique N: {n[:50]}...")
-            print(f"📄 Clé publique E: {e}")
-            print(f"🔐 Clé privée D: {d[:50]}...")
+            print(f"Clé publique N: {n[:50]}...")
+            print(f"Clé publique E: {e}")
+            print(f"Clé privée D: {d[:50]}...")
         except:
-            print("❌ Impossible de déchiffrer les clés")
+            print("Impossible de déchiffrer les clés")
     else:
-        print("📋 Aucune clé chiffrée trouvée")
+        print("Aucune clé chiffrée trouvée")
         print("Utilisez ce gestionnaire avec vos clés RSA existantes")
 
 

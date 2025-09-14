@@ -12,7 +12,7 @@ import time
 from key_manager import SecureKeyManager
 
 # Configuration du client
-SERVER_HOST = '127.0.0.1'  # Remplacez par l'IP du serveur
+SERVER_HOST = '127.0.0.1'  # Remplacez par l'IP du serveur 192.168.0.141
 SERVER_PORT = 65432
 BUFFER_SIZE = 8192
 KEY_DIR = "client_keys"

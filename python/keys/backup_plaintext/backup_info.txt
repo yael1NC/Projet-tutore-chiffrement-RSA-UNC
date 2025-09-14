@@ -1,6 +1,0 @@
-Sauvegarde des clés RSA en clair
-Créée le: Fri Sep 12 10:36:20 2025
-Dossier original: /home/yael/Bureau/Projet-tutore-chiffrement-RSA-UNC-1-test-padding/python/keys
-
-ATTENTION: Ces fichiers contiennent vos clés privées RSA en clair!
-Supprimez cette sauvegarde une fois la migration vérifiée.

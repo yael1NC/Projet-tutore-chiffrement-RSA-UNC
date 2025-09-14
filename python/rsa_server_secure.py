@@ -140,17 +140,58 @@ class SecureRSAServer:
             return False
     
     def handle_client(self, conn, addr):
-        """Traite une connexion client"""
+        """Traite une connexion client avec buffer amélioré"""
         print(f"Connecté par {addr}")
+        full_data = ""
         try:
-            data = conn.recv(4096).decode('utf-8')
-            request = json.loads(data)
+            # Buffer plus grand et réception complète
+            data_parts = []
+            conn.settimeout(30)  # Timeout de 30 secondes
+            
+            while True:
+                try:
+                    chunk = conn.recv(8192)  # Buffer plus grand
+                    if not chunk:
+                        break
+                    data_parts.append(chunk)
+                    
+                    # Vérifier si on a reçu un JSON complet
+                    try:
+                        combined_data = b''.join(data_parts).decode('utf-8')
+                        # Tenter de parser pour voir si c'est complet
+                        json.loads(combined_data)
+                        full_data = combined_data
+                        break  # JSON complet reçu
+                    except json.JSONDecodeError:
+                        # JSON incomplet, continuer à recevoir
+                        if len(b''.join(data_parts)) > 16384:  # Limite de sécurité
+                            raise ValueError("Message trop long")
+                        continue
+                    except UnicodeDecodeError:
+                        # Données incomplètes, continuer
+                        continue
+                        
+                except socket.timeout:
+                    if data_parts:
+                        full_data = b''.join(data_parts).decode('utf-8')
+                        break  # On a des données, essayer de les traiter
+                    else:
+                        raise
+            
+            if not full_data:
+                print("Aucune donnée reçue")
+                return
+                
+            print(f"Données reçues: {len(full_data)} caractères")
+            
+            request = json.loads(full_data)
             operation = request.get('operation')
             payload = request.get('data')
             response = {}
             
             if operation == 'decrypt':
                 print(f"Requête de déchiffrement reçue.")
+                print(f"Données chiffrées: {len(payload) if payload else 0} caractères")
                 try:
                     decrypted_data = self.rsa_decrypt_python(payload, self.d_val, self.n_val)
                     response['result'] = decrypted_data
@@ -171,23 +212,33 @@ class SecureRSAServer:
             elif operation == 'server_info':
                 response['status'] = 'success'
                 response['info'] = {
-                    'version': '2.0-secure',
+                    'version': '2.0-secure-fixed',
                     'key_protection': 'encrypted',
-                    'supported_operations': ['decrypt', 'get_public_key', 'server_info']
+                    'supported_operations': ['decrypt', 'get_public_key', 'server_info'],
+                    'max_message_size': '16KB'
                 }
                 
             else:
                 response['status'] = 'error'
                 response['message'] = 'Opération non supportée.'
-                
-            conn.sendall(json.dumps(response).encode('utf-8'))
             
-        except json.JSONDecodeError:
-            print("Erreur de décodage JSON.")
-            conn.sendall(json.dumps({'status': 'error', 'message': 'JSON invalide'}).encode('utf-8'))
+            # Envoyer la réponse
+            response_json = json.dumps(response)
+            print(f"Envoi de la réponse: {len(response_json)} caractères")
+            conn.sendall(response_json.encode('utf-8'))
+            
+        except json.JSONDecodeError as e:
+            print(f"Erreur de décodage JSON: {e}")
+            print(f"Données reçues: {full_data[:500] if full_data else 'Aucune'}")
+            error_response = {'status': 'error', 'message': f'JSON invalide: {str(e)}'}
+            conn.sendall(json.dumps(error_response).encode('utf-8'))
         except Exception as e:
             print(f"Erreur lors du traitement de la requête : {e}")
-            conn.sendall(json.dumps({'status': 'error', 'message': str(e)}).encode('utf-8'))
+            error_response = {'status': 'error', 'message': str(e)}
+            try:
+                conn.sendall(json.dumps(error_response).encode('utf-8'))
+            except:
+                pass  # Connexion fermée
         finally:
             conn.close()
             print(f"Connexion avec {addr} fermée.")
