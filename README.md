@@ -1,12 +1,13 @@
 # Implémentation Sécurisée du Schéma de Chiffrement RSA
 
-
 ## 🔐 Fonctionnalités
 
 - **Génération de clés RSA 4096 bits** avec nombres premiers cryptographiquement sécurisés
 - **Test de primalité Miller-Rabin** avec 25 itérations pour une sécurité renforcée
 - **6 algorithmes d'exponentiation modulaire** différents pour l'analyse comparative
-
+- **Interface Python interactive** avec choix d'algorithmes
+- **Système client-serveur** avec protection des clés par chiffrement
+- **Gestionnaire de clés sécurisé** avec AES-256-GCM
 
 ## 🧮 Algorithmes d'Exponentiation Modulaire Implémentés
 
@@ -66,19 +67,23 @@ void rsa_decrypt_string(const char* encrypt_message_hex, const char* d_hex, cons
 - `buffer_size` : Taille du buffer de sortie
 - `algo_choice` : Sélection de la variante d'algorithme
 
-
 ## 🛠️ Compilation et Dépendances
 
 ### Prérequis
 ```bash
 # Ubuntu/Debian
-sudo apt install libgmp-dev libsodium-dev make gcc
+sudo apt install libgmp-dev libsodium-dev make gcc python3 python3-pip
 
 # CentOS/RHEL/Fedora
-sudo dnf install gmp-devel libsodium-devel make gcc
+sudo dnf install gmp-devel libsodium-devel make gcc python3 python3-pip
 
 # macOS
-brew install gmp libsodium
+brew install gmp libsodium python3
+```
+
+### Dépendances Python
+```bash
+pip install cryptography
 ```
 
 ### Compilation
@@ -86,9 +91,12 @@ brew install gmp libsodium
 make          # Compile la bibliothèque rsa_lib.so
 make clean    # Nettoie les fichiers générés
 make rebuild  # Clean + compile
+make run      # Lance l'interface Python principale
+make server   # Lance le serveur RSA
+make client   # Lance le client RSA
 ```
 
-## 🚀 Utilisation
+## 🚀 Utilisation en C
 
 ### Génération Automatique de Clés RSA
 ```c
@@ -159,15 +167,154 @@ int main() {
     return 0;
 }
 ```
-``
+```bash
 gcc -Wall -Wextra -g -O0 main.c rsa.c -o test_rsa -lgmp -lsodium
-``
+```
+
+## 🐍 Utilisation en Python
+
+### Installation Rapide
+```bash
+cd python/
+python3 setup_secure_rsa.py
+```
+
+### Interface Interactive Principale
+```bash
+cd python/
+python3 main.py
+```
+
+**Menu principal :**
+- Chiffrer/déchiffrer des messages
+- Comparer les performances des algorithmes
+- Générer de nouvelles clés
+- Tests complets avec vérification
+
+### Système Client-Serveur
+
+#### Démarrage du Serveur
+```bash
+cd python/
+python3 rsa_server_secure.py
+```
+
+Le serveur :
+- Génère automatiquement des clés sécurisées
+- Protège les clés privées avec AES-256-GCM
+- Accepte les connexions pour déchiffrement
+
+#### Utilisation du Client
+```bash
+cd python/
+python3 client_secure.py
+```
+
+Le client :
+- Récupère automatiquement les clés publiques du serveur
+- Chiffre les messages localement
+- Envoie au serveur pour déchiffrement et vérification
+
+#### Configuration Avancée
+```bash
+# Changer l'adresse du serveur
+python3 client_secure.py
+
+# Gestion des clés
+python3 rsa_server_secure.py --manage-keys
+
+# Migration des clés existantes
+python3 migration_tool.py
+```
+
+### Benchmark des Algorithmes
+```bash
+cd python/
+python3 main.py
+# Choisir l'option 4 pour le benchmark automatique
+```
+
+### Tests Rapides
+```bash
+# Test simple de la bibliothèque C
+cd python/
+python3 -c "
+import ctypes
+lib = ctypes.CDLL('../rsa_lib.so')
+print('Bibliothèque chargée avec succès!')
+"
+
+# Test client-serveur rapide
+python3 client_secure.py "Test rapide"
+```
+
+### Structure du Projet
+```
+Projet-RSA/
+├── src/
+│   ├── rsa.h                    # Header C
+│   └── rsa.c                    # Implémentation C
+├── python/
+│   ├── main.py                  # Interface principale
+│   ├── rsa_server_secure.py     # Serveur avec clés sécurisées
+│   ├── client_secure.py         # Client sécurisé
+│   ├── key_manager.py           # Gestionnaire de clés
+│   ├── migration_tool.py        # Outil de migration
+│   └── setup_secure_rsa.py      # Installation automatique
+├── rsa_lib.so                   # Bibliothèque compilée
+├── Makefile                     # Build system
+├── config.ini                   # Configuration
+└── README.md                    # Documentation
+```
+
+### Algorithmes Disponibles (Python)
+1. **Square and Multiply** - Basique, rapide
+2. **Square and Multiply Always** - Résistant aux attaques par canal auxiliaire
+3. **Montgomery Ladder** - Équilibré performance/sécurité
+4. **Semi-interleaved Ladder** - Sécurisé contre les attaques temporelles
+5. **Fully-interleaved Ladder** - Maximum de sécurité
+6. **GMP mpz_powm** - Optimisé par défaut (recommandé)
+
+### Sécurité des Clés Python
+- **Chiffrement AES-256-GCM** des clés privées
+- **Dérivation PBKDF2-HMAC-SHA256** (100,000 itérations)
+- **Sel cryptographique** unique par installation
+- **Effacement sécurisé** des clés temporaires
+- **Permissions restrictives** sur les fichiers
+
+### Exemples d'Usage Avancé
+
+#### Benchmark de Performance
+```python
+# Dans l'interface Python
+python3 main.py
+# Choisir option 4, puis entrer un message de test
+# Résultats automatiques pour tous les algorithmes
+```
+
+#### Test de Résistance aux Attaques
+```python
+# Test avec différentes tailles de messages
+python3 main.py
+# Option 3 pour tests complets avec vérification
+```
+
+#### Configuration Réseau
+```python
+# Modifier l'IP du serveur dans client_secure.py
+SERVER_HOST = '192.168.1.100'  # IP du serveur distant
+```
 
 ## 🔒 Sécurité
 
-### Paramètres de Sécurité
+### Paramètres de Sécurité C
 - **Taille des clés**: 4096 bits 
 - **Exposant public**: 65537 
 - **Test de primalité**: Miller-Rabin avec 25 itérations 
 - **Générateur aléatoire**: libsodium
 
+### Sécurité Python Additionnelle
+- **Protection des clés**: AES-256-GCM + PBKDF2 (100k itérations)
+- **Authentification**: Tag GCM pour intégrité
+- **Gestion mémoire**: Effacement sécurisé des secrets
+- **Permissions**: Accès restreint aux fichiers sensibles
