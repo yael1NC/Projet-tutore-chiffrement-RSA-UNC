@@ -91,9 +91,6 @@ pip install cryptography
 make          # Compile la bibliothèque rsa_lib.so
 make clean    # Nettoie les fichiers générés
 make rebuild  # Clean + compile
-make run      # Lance l'interface Python principale
-make server   # Lance le serveur RSA
-make client   # Lance le client RSA
 ```
 
 ## 🚀 Utilisation en C
