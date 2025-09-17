@@ -25,64 +25,85 @@ class SecureRSAInstaller:
         print("Vérification de la version Python...")
         
         if sys.version_info < (3, 6):
-            print("❌ Python 3.6+ requis")
+            print("Python 3.6+ requis")
             print(f"Version actuelle: {sys.version}")
             return False
         
-        print(f"✅ Python {sys.version_info.major}.{sys.version_info.minor}")
+        print(f"Python {sys.version_info.major}.{sys.version_info.minor}")
         return True
     
     def check_required_files(self):
-        """Vérifie la présence des fichiers requis"""
+        """Vérifie la présence des fichiers requis dans src/"""
         print("Vérification des fichiers source...")
         
-        # Chercher dans plusieurs emplacements possibles
-        search_paths = [
-            self.project_root,  # Répertoire courant
-            self.project_root.parent,  # Répertoire parent
-            self.project_root / 'source',  # Sous-dossier source
-            self.project_root.parent / 'source',  # source dans parent
-            self.project_root / '..' / 'source',  # ../source
-            self.project_root / 'src',  # Sous-dossier src
-            self.project_root.parent / 'src',  # src dans parent
-        ]
+        # Chercher dans le dossier src au niveau parent du répertoire courant
+        src_dir = self.project_root.parent / 'src'
         
-        found_files = {}
+        if not src_dir.exists():
+            print(f"Dossier src/ manquant : {src_dir}")
+            print("Structure attendue :")
+            print("  Projet/")
+            print("  ├── src/")
+            print("  │   ├── rsa.h")
+            print("  │   └── rsa.c")
+            print("  └── python/")
+            return False
+        
         missing_files = []
         
         for file_name in self.required_files:
-            found = False
-            for search_path in search_paths:
-                file_path = Path(search_path) / file_name
-                if file_path.exists():
-                    found_files[file_name] = file_path.resolve()
-                    print(f"✅ Trouvé {file_name}: {file_path}")
-                    found = True
-                    break
-            
-            if not found:
+            file_path = src_dir / file_name
+            if file_path.exists():
+                print(f"Trouvé {file_name}: {file_path}")
+            else:
                 missing_files.append(file_name)
         
         if missing_files:
-            print("❌ Fichiers manquants:")
+            print("Fichiers manquants dans src/ :")
             for file_name in missing_files:
                 print(f"   - {file_name}")
-            print("\nCherché dans:")
-            for path in search_paths:
-                abs_path = Path(path).resolve()
-                exists = "✓" if abs_path.exists() else "✗"
-                print(f"   {exists} {abs_path}")
             return False
         
-        # Copier les fichiers dans le répertoire courant s'ils ne s'y trouvent pas
-        for file_name, file_path in found_files.items():
-            local_path = self.project_root / file_name
-            if not local_path.exists():
-                print(f"Copie de {file_name} vers le répertoire courant...")
-                shutil.copy2(file_path, local_path)
-        
-        print("✅ Tous les fichiers source disponibles")
+        print("Tous les fichiers source disponibles dans src/")
         return True
+
+    def compile_library(self):
+        """Compile la bibliothèque RSA depuis src/"""
+        print("Compilation de la bibliothèque RSA...")
+        
+        # Compiler directement depuis src/ au niveau parent
+        src_dir = self.project_root.parent / 'src'
+        compile_cmd = [
+            'gcc', '-shared', '-fPIC', '-o', 'rsa_lib.so', 
+            str(src_dir / 'rsa.c'), '-lgmp', '-lsodium'
+        ]
+        
+        try:
+            print(f"Commande: {' '.join(compile_cmd)}")
+            result = subprocess.run(compile_cmd, capture_output=True, text=True)
+            
+            if result.returncode == 0:
+                print("Bibliothèque RSA compilée (rsa_lib.so)")
+                
+                # Vérifier que le fichier existe et a les bonnes permissions
+                lib_path = Path('rsa_lib.so')
+                if lib_path.exists():
+                    lib_path.chmod(0o755)
+                    print(f"   Taille: {lib_path.stat().st_size} bytes")
+                    print(f"   Emplacement: {lib_path.absolute()}")
+                    return True
+                else:
+                    print("Fichier rsa_lib.so non trouvé après compilation")
+                    return False
+            else:
+                print("Erreur de compilation")
+                print("STDOUT:", result.stdout)
+                print("STDERR:", result.stderr)
+                return False
+                
+        except Exception as e:
+            print(f"Erreur lors de la compilation: {e}")
+            return False
     
     def check_system_dependencies(self):
         """Vérifie les dépendances système"""
@@ -92,12 +113,12 @@ class SecureRSAInstaller:
         try:
             result = subprocess.run(['gcc', '--version'], capture_output=True, text=True)
             if result.returncode == 0:
-                print("✅ GCC disponible")
+                print("GCC disponible")
             else:
-                print("❌ GCC non trouvé")
+                print("GCC non trouvé")
                 return False
         except FileNotFoundError:
-            print("❌ GCC non installé")
+            print("GCC non installé")
             print("Sur Ubuntu/Debian: sudo apt-get install build-essential")
             print("Sur CentOS/RHEL: sudo yum install gcc")
             return False
@@ -120,14 +141,14 @@ int main() { mpz_t x; mpz_init(x); mpz_clear(x); return 0; }
                 os.remove('test_gmp')
             
             if result.returncode == 0:
-                print("✅ libgmp disponible")
+                print("libgmp disponible")
             else:
-                print("❌ libgmp non trouvée")
+                print("libgmp non trouvée")
                 print("Sur Ubuntu/Debian: sudo apt-get install libgmp-dev")
                 print("Sur CentOS/RHEL: sudo yum install gmp-devel")
                 return False
         except Exception as e:
-            print(f"❌ Erreur lors du test GMP: {e}")
+            print(f"Erreur lors du test GMP: {e}")
             return False
         
         # Vérifier Sodium
@@ -148,14 +169,14 @@ int main() { if (sodium_init() < 0) return 1; return 0; }
                 os.remove('test_sodium')
             
             if result.returncode == 0:
-                print("✅ libsodium disponible")
+                print("libsodium disponible")
             else:
-                print("❌ libsodium non trouvée")
+                print("libsodium non trouvée")
                 print("Sur Ubuntu/Debian: sudo apt-get install libsodium-dev")
                 print("Sur CentOS/RHEL: sudo yum install libsodium-devel")
                 return False
         except Exception as e:
-            print(f"❌ Erreur lors du test Sodium: {e}")
+            print(f"Erreur lors du test Sodium: {e}")
             return False
         
         return True
@@ -171,63 +192,17 @@ int main() { if (sodium_init() < 0) return 1; return 0; }
                                       capture_output=True, text=True)
                 
                 if result.returncode == 0:
-                    print(f"✅ {package} installé")
+                    print(f"{package} installé")
                 else:
-                    print(f"❌ Échec installation {package}")
+                    print(f"Echec installation {package}")
                     print(result.stderr)
                     return False
             except Exception as e:
-                print(f"❌ Erreur installation {package}: {e}")
+                print(f"Erreur installation {package}: {e}")
                 return False
         
         return True
     
-    def compile_library(self):
-        """Compile la bibliothèque RSA"""
-        print("Compilation de la bibliothèque RSA...")
-        
-        compile_cmd = ['gcc', '-shared', '-fPIC', '-o', 'rsa_lib.so', 'rsa.c', '-lgmp', '-lsodium']
-        
-        try:
-            result = subprocess.run(compile_cmd, capture_output=True, text=True)
-            
-            if result.returncode == 0:
-                print("✅ Bibliothèque RSA compilée (rsa_lib.so)")
-                
-                # Vérifier que le fichier existe et a les bonnes permissions
-                lib_path = Path('rsa_lib.so')
-                if lib_path.exists():
-                    lib_path.chmod(0o755)
-                    print(f"   Taille: {lib_path.stat().st_size} bytes")
-                    return True
-                else:
-                    print("❌ Fichier rsa_lib.so non trouvé après compilation")
-                    return False
-            else:
-                print("❌ Erreur de compilation")
-                print("STDOUT:", result.stdout)
-                print("STDERR:", result.stderr)
-                return False
-                
-        except Exception as e:
-            print(f"❌ Erreur lors de la compilation: {e}")
-            return False
-    
-    def create_directory_structure(self):
-        """Crée la structure des dossiers"""
-        print("Création de la structure des dossiers...")
-        
-        directories = ['keys', 'client_keys', 'logs']
-        
-        for dir_name in directories:
-            dir_path = Path(dir_name)
-            if not dir_path.exists():
-                dir_path.mkdir(mode=0o700)
-                print(f"✅ Dossier créé: {dir_name}/")
-            else:
-                print(f"📁 Dossier existant: {dir_name}/")
-        
-        return True
     
     def create_config_file(self):
         """Crée un fichier de configuration"""
@@ -264,9 +239,9 @@ file = logs/rsa_secure.log
         if not config_path.exists():
             with open(config_path, 'w') as f:
                 f.write(config_content)
-            print("✅ Fichier de configuration créé: config.ini")
+            print("Fichier de configuration créé: config.ini")
         else:
-            print("📄 Fichier de configuration existant")
+            print("Fichier de configuration existant")
         
         return True
     
@@ -280,10 +255,10 @@ file = logs/rsa_secure.log
             
             import ctypes
             lib = ctypes.CDLL('./rsa_lib.so')
-            print("✅ Bibliothèque C chargeable")
+            print("Bibliothèque C chargeable")
             
             from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-            print("✅ Module cryptography fonctionnel")
+            print("Module cryptography fonctionnel")
             
             # Test de génération de clés (rapide)
             print("Test de génération de clés...")
@@ -296,13 +271,13 @@ file = logs/rsa_secure.log
             d_out = ctypes.create_string_buffer(buffer_size)
             
             # Note: Le test complet prendrait trop de temps
-            print("⚠️  Test de génération différé (trop long pour l'installation)")
+            print("Test de génération différé (trop long pour l'installation)")
             
-            print("✅ Tests de base réussis")
+            print("Tests de base réussis")
             return True
             
         except Exception as e:
-            print(f"❌ Échec des tests: {e}")
+            print(f"Echec des tests: {e}")
             return False
     
     def show_next_steps(self):
@@ -311,7 +286,7 @@ file = logs/rsa_secure.log
         print("  INSTALLATION TERMINÉE AVEC SUCCÈS!")
         print("="*60)
         
-        print("\nPROCHAINES ÉTAPES:")
+        print("\nPROCHAINES ETAPES:")
         print("-" * 20)
         
         if Path('keys/public_n.key').exists():
@@ -366,11 +341,27 @@ file = logs/rsa_secure.log
             print("-" * 40)
             
             if not step_func():
-                print(f"\n❌ ÉCHEC À L'ÉTAPE: {step_name}")
+                print(f"\nECHEC À L'ÉTAPE: {step_name}")
                 print("Installation interrompue.")
                 return False
         
         self.show_next_steps()
+        return True
+    
+    def create_directory_structure(self):
+        """Crée la structure des dossiers"""
+        print("Création de la structure des dossiers...")
+        
+        directories = ['keys', 'client_keys', 'logs']
+        
+        for dir_name in directories:
+            dir_path = Path(dir_name)
+            if not dir_path.exists():
+                dir_path.mkdir(mode=0o700)
+                print(f"Dossier créé: {dir_name}/")
+            else:
+                print(f"Dossier existant: {dir_name}/")
+        
         return True
 
 

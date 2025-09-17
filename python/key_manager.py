@@ -241,7 +241,7 @@ class SecureKeyManager:
             success = self.encrypt_keys(n_val, e_val, d_val, new_password)
             
             if success:
-                print("✅ Mot de passe changé avec succès")
+                print("Mot de passe changé avec succès")
             
             return success
             

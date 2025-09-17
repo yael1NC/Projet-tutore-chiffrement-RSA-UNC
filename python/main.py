@@ -50,23 +50,23 @@ class RSAInterface:
             self.rsa_lib.rsa_decrypt_string.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p, ctypes.c_size_t, ctypes.c_int]
             self.rsa_lib.rsa_decrypt_string.restype = None
             
-            print("✅ Bibliothèque RSA chargée avec succès")
+            print("Bibliothèque RSA chargée avec succès")
             
         except OSError as e:
-            print(f"❌ Erreur : Impossible de charger la bibliothèque rsa_lib.so")
-            print(f"   Détails : {e}")
-            print("   Assurez-vous que la bibliothèque est compilée dans le répertoire parent.")
+            print(f"Erreur : Impossible de charger la bibliothèque rsa_lib.so")
+            print(f"Détails : {e}")
+            print("Assurez-vous que la bibliothèque est compilée dans le répertoire parent.")
             exit(1)
     
     def load_or_generate_keys(self):
         """Charge les clés existantes ou en génère de nouvelles"""
-        print("\n🔑 Gestion des clés RSA...")
+        print("\nGestion des clés RSA...")
         
         if (os.path.exists(PUB_N_FILE) and 
             os.path.exists(PUB_E_FILE) and 
             os.path.exists(PRIV_D_FILE)):
             
-            print("📁 Clés existantes trouvées, chargement...")
+            print("Clés existantes trouvées, chargement...")
             with open(PUB_N_FILE, 'r') as f:
                 self.n_val = f.read().strip()
             with open(PUB_E_FILE, 'r') as f:
@@ -74,13 +74,13 @@ class RSAInterface:
             with open(PRIV_D_FILE, 'r') as f:
                 self.d_val = f.read().strip()
                 
-            print("✅ Clés chargées avec succès")
+            print("Clés chargées avec succès")
             print(f"   N: {self.n_val[:50]}...")
             print(f"   E: {self.e_val}")
             return
         
-        print("🔧 Génération de nouvelles clés RSA (4096 bits)...")
-        print("⚠️  Cela peut prendre quelques minutes...")
+        print("Génération de nouvelles clés RSA (4096 bits)...")
+        print("Cela peut prendre quelques minutes...")
         
         if not os.path.exists(KEY_DIR):
             os.makedirs(KEY_DIR)
@@ -104,10 +104,10 @@ class RSAInterface:
         with open(PRIV_D_FILE, 'w') as f:
             f.write(self.d_val)
         
-        print(f"✅ Clés générées en {generation_time:.2f} secondes")
+        print(f"Clés générées en {generation_time:.2f} secondes")
         print(f"   N: {self.n_val[:50]}...")
         print(f"   E: {self.e_val}")
-        print("💾 Clés sauvegardées dans le dossier 'keys/'")
+        print("Clés sauvegardées dans le dossier 'keys/'")
     
     def encrypt_message(self, message, algo_choice):
         """Chiffre un message avec l'algorithme choisi"""
@@ -145,7 +145,7 @@ class RSAInterface:
     
     def display_algorithms(self):
         """Affiche la liste des algorithmes disponibles"""
-        print("\n📋 Algorithmes d'exponentiation modulaire disponibles :")
+        print("\nAlgorithmes d'exponentiation modulaire disponibles :")
         print("=" * 70)
         for num, desc in ALGORITHMS.items():
             print(f"   {num}. {desc}")
@@ -155,23 +155,23 @@ class RSAInterface:
         """Demande à l'utilisateur de choisir un algorithme"""
         while True:
             try:
-                choice = int(input(f"\n🔢 Choisissez un algorithme (1-{len(ALGORITHMS)}) : "))
+                choice = int(input(f"\nChoisissez un algorithme (1-{len(ALGORITHMS)}) : "))
                 if choice in ALGORITHMS:
                     return choice
                 else:
-                    print(f"❌ Veuillez choisir un nombre entre 1 et {len(ALGORITHMS)}")
+                    print(f"Veuillez choisir un nombre entre 1 et {len(ALGORITHMS)}")
             except ValueError:
-                print("❌ Veuillez entrer un nombre valide")
+                print("Veuillez entrer un nombre valide")
     
     def benchmark_algorithms(self, message="Test de performance"):
         """Compare les performances de tous les algorithmes"""
-        print(f"\n⏱️  Benchmark des algorithmes avec le message : '{message}'")
+        print(f"\nBenchmark des algorithmes avec le message : '{message}'")
         print("=" * 80)
         
         results = []
         
         for algo_num, algo_name in ALGORITHMS.items():
-            print(f"\n🔄 Test de l'algorithme {algo_num}: {algo_name}")
+            print(f"\nTest de l'algorithme {algo_num}: {algo_name}")
             
             try:
                 # Test de chiffrement
@@ -182,7 +182,7 @@ class RSAInterface:
                 
                 # Vérification
                 if decrypted_message == message:
-                    status = "✅ Succès"
+                    status = "Succès"
                     total_time = enc_time + dec_time
                     results.append({
                         'algorithm': algo_name,
@@ -193,15 +193,15 @@ class RSAInterface:
                     })
                     print(f"   Chiffrement: {enc_time:.4f}s | Déchiffrement: {dec_time:.4f}s | Total: {total_time:.4f}s")
                 else:
-                    status = "❌ Échec"
+                    status = "Echec"
                     results.append({
                         'algorithm': algo_name,
-                        'status': 'Échec'
+                        'status': 'Echec'
                     })
                     print(f"   {status} - Message déchiffré incorrect")
                 
             except Exception as e:
-                print(f"   ❌ Erreur : {e}")
+                print(f"Erreur : {e}")
                 results.append({
                     'algorithm': algo_name,
                     'status': f'Erreur: {e}'
@@ -213,7 +213,7 @@ class RSAInterface:
     
     def display_benchmark_results(self, results):
         """Affiche un résumé des résultats de benchmark"""
-        print("\n📊 Résumé des performances :")
+        print("\nRésumé des performances :")
         print("=" * 80)
         
         successful_results = [r for r in results if r['status'] == 'Succès']
@@ -232,31 +232,31 @@ class RSAInterface:
                       f"{result['total_time']:.4f}s")
             
             fastest = successful_results[0]
-            print(f"\n🏆 Algorithme le plus rapide : {fastest['algorithm']}")
+            print(f"\nAlgorithme le plus rapide : {fastest['algorithm']}")
             print(f"   Temps total : {fastest['total_time']:.4f} secondes")
         
         # Affichage des échecs
         failed_results = [r for r in results if r['status'] != 'Succès']
         if failed_results:
-            print(f"\n❌ Algorithmes avec des erreurs :")
+            print(f"\nAlgorithmes avec des erreurs :")
             for result in failed_results:
                 print(f"   • {result['algorithm']} : {result['status']}")
     
     def interactive_mode(self):
         """Mode interactif principal"""
-        print("🎯 Mode interactif - Chiffrement/Déchiffrement RSA")
+        print("Mode interactif - Chiffrement/Déchiffrement RSA")
         
         while True:
             print("\n" + "="*60)
-            print("🔐 MENU PRINCIPAL")
+            print("MENU PRINCIPAL")
             print("="*60)
-            print("1. 📝 Chiffrer un message")
-            print("2. 🔓 Déchiffrer un message")
-            print("3. 🔄 Chiffrer puis déchiffrer (test complet)")
-            print("4. ⏱️  Benchmark des algorithmes")
-            print("5. 📋 Afficher les algorithmes disponibles")
-            print("6. 🔑 Régénérer les clés RSA")
-            print("7. ❌ Quitter")
+            print("1. Chiffrer un message")
+            print("2. Déchiffrer un message")
+            print("3. Chiffrer puis déchiffrer (test complet)")
+            print("4. Benchmark des algorithmes")
+            print("5. Afficher les algorithmes disponibles")
+            print("6. Régénérer les clés RSA")
+            print("7. Quitter")
             print("="*60)
             
             try:
@@ -269,7 +269,7 @@ class RSAInterface:
                 elif choice == '3':
                     self.test_complete_mode()
                 elif choice == '4':
-                    message = input("\n📝 Message pour le benchmark (ou Entrée pour 'Test de performance') : ").strip()
+                    message = input("\nMessage pour le benchmark (ou Entrée pour 'Test de performance') : ").strip()
                     if not message:
                         message = "Test de performance"
                     self.benchmark_algorithms(message)
@@ -278,37 +278,37 @@ class RSAInterface:
                 elif choice == '6':
                     self.regenerate_keys()
                 elif choice == '7':
-                    print("\n👋 Au revoir !")
+                    print("\nAu revoir !")
                     break
                 else:
-                    print("❌ Choix invalide, veuillez réessayer")
+                    print("Choix invalide, veuillez réessayer")
                     
             except KeyboardInterrupt:
-                print("\n\n👋 Au revoir !")
+                print("\n\nAu revoir !")
                 break
             except Exception as e:
-                print(f"❌ Erreur : {e}")
+                print(f"Erreur : {e}")
     
     def encrypt_mode(self):
         """Mode chiffrement"""
-        message = input("\n📝 Entrez le message à chiffrer : ")
+        message = input("\nEntrez le message à chiffrer : ")
         if not message:
-            print("❌ Message vide !")
+            print("Message vide !")
             return
         
         self.display_algorithms()
         algo_choice = self.get_algorithm_choice()
         
         try:
-            print(f"\n🔒 Chiffrement avec : {ALGORITHMS[algo_choice]}")
+            print(f"\nChiffrement avec : {ALGORITHMS[algo_choice]}")
             encrypted_hex, enc_time = self.encrypt_message(message, algo_choice)
             
-            print(f"✅ Message chiffré en {enc_time:.4f} secondes")
-            print(f"📄 Message original : '{message}'")
-            print(f"🔐 Message chiffré (hex) : {encrypted_hex}")
+            print(f"Message chiffré en {enc_time:.4f} secondes")
+            print(f"Message original : '{message}'")
+            print(f"Message chiffré (hex) : {encrypted_hex}")
             
             # Sauvegarde optionnelle
-            save = input("\n💾 Sauvegarder le message chiffré ? (o/N) : ").lower()
+            save = input("\nSauvegarder le message chiffré ? (o/N) : ").lower()
             if save == 'o':
                 filename = f"encrypted_message_{int(time.time())}.txt"
                 with open(filename, 'w') as f:
@@ -319,90 +319,90 @@ class RSAInterface:
                         'algorithm_name': ALGORITHMS[algo_choice],
                         'timestamp': time.time()
                     }, f, indent=2)
-                print(f"💾 Message sauvegardé dans {filename}")
+                print(f"Message sauvegardé dans {filename}")
                 
         except Exception as e:
-            print(f"❌ Erreur lors du chiffrement : {e}")
+            print(f"Erreur lors du chiffrement : {e}")
     
     def decrypt_mode(self):
         """Mode déchiffrement"""
-        encrypted_hex = input("\n🔐 Entrez le message chiffré (en hexadécimal) : ").strip()
+        encrypted_hex = input("\nEntrez le message chiffré (en hexadécimal) : ").strip()
         if not encrypted_hex:
-            print("❌ Message vide !")
+            print("Message vide !")
             return
         
         self.display_algorithms()
         algo_choice = self.get_algorithm_choice()
         
         try:
-            print(f"\n🔓 Déchiffrement avec : {ALGORITHMS[algo_choice]}")
+            print(f"\nDéchiffrement avec : {ALGORITHMS[algo_choice]}")
             decrypted_message, dec_time = self.decrypt_message(encrypted_hex, algo_choice)
             
-            print(f"✅ Message déchiffré en {dec_time:.4f} secondes")
-            print(f"🔐 Message chiffré : {encrypted_hex[:50]}...")
-            print(f"📄 Message déchiffré : '{decrypted_message}'")
+            print(f"Message déchiffré en {dec_time:.4f} secondes")
+            print(f"Message chiffré : {encrypted_hex[:50]}...")
+            print(f"Message déchiffré : '{decrypted_message}'")
             
         except Exception as e:
-            print(f"❌ Erreur lors du déchiffrement : {e}")
+            print(f"Erreur lors du déchiffrement : {e}")
     
     def test_complete_mode(self):
         """Mode test complet (chiffrement + déchiffrement)"""
-        message = input("\n📝 Entrez le message à tester : ")
+        message = input("\nEntrez le message à tester : ")
         if not message:
-            print("❌ Message vide !")
+            print("Message vide !")
             return
         
         self.display_algorithms()
         algo_choice = self.get_algorithm_choice()
         
         try:
-            print(f"\n🔄 Test complet avec : {ALGORITHMS[algo_choice]}")
+            print(f"\nTest complet avec : {ALGORITHMS[algo_choice]}")
             
             # Chiffrement
-            print("🔒 Étape 1/2 : Chiffrement...")
+            print("Étape 1/2 : Chiffrement...")
             encrypted_hex, enc_time = self.encrypt_message(message, algo_choice)
             
             # Déchiffrement
-            print("🔓 Étape 2/2 : Déchiffrement...")
+            print("Étape 2/2 : Déchiffrement...")
             decrypted_message, dec_time = self.decrypt_message(encrypted_hex, algo_choice)
             
             # Résultats
             total_time = enc_time + dec_time
-            print(f"\n📊 Résultats du test :")
-            print(f"   📄 Message original    : '{message}'")
-            print(f"   🔐 Message chiffré     : {encrypted_hex[:50]}...")
-            print(f"   📄 Message déchiffré   : '{decrypted_message}'")
-            print(f"   ⏱️  Temps chiffrement  : {enc_time:.4f}s")
-            print(f"   ⏱️  Temps déchiffrement: {dec_time:.4f}s")
-            print(f"   ⏱️  Temps total        : {total_time:.4f}s")
+            print(f"\nRésultats du test :")
+            print(f"   Message original    : '{message}'")
+            print(f"   Message chiffré     : {encrypted_hex[:50]}...")
+            print(f"   Message déchiffré   : '{decrypted_message}'")
+            print(f"   Temps chiffrement  : {enc_time:.4f}s")
+            print(f"   Temps déchiffrement: {dec_time:.4f}s")
+            print(f"   Temps total        : {total_time:.4f}s")
             
             if decrypted_message == message:
-                print("   ✅ Test réussi : Les messages correspondent !")
+                print("   Test réussi : Les messages correspondent !")
             else:
-                print("   ❌ Test échoué : Les messages ne correspondent pas !")
+                print("   Test échoué : Les messages ne correspondent pas !")
                 
         except Exception as e:
             print(f"❌ Erreur lors du test : {e}")
     
     def regenerate_keys(self):
         """Régénère les clés RSA"""
-        confirm = input("\n⚠️  Êtes-vous sûr de vouloir régénérer les clés ? (o/N) : ").lower()
+        confirm = input("\nÊtes-vous sûr de vouloir régénérer les clés ? (o/N) : ").lower()
         if confirm == 'o':
             # Suppression des anciennes clés
             for key_file in [PUB_N_FILE, PUB_E_FILE, PRIV_D_FILE]:
                 if os.path.exists(key_file):
                     os.remove(key_file)
             
-            print("🔧 Régénération des clés en cours...")
+            print("Régénération des clés en cours...")
             self.load_or_generate_keys()
         else:
-            print("❌ Régénération annulée")
+            print("Régénération annulée")
 
 def main():
     """Fonction principale"""
-    print("🔐" + "="*58 + "🔐")
-    print("  🎯 INTERFACE RSA - ALGORITHMES D'EXPONENTIATION MODULAIRE")
-    print("🔐" + "="*58 + "🔐")
+    print("="*58)
+    print("  INTERFACE RSA - ALGORITHMES D'EXPONENTIATION MODULAIRE")
+    print("="*58)
     
     try:
         rsa_interface = RSAInterface()
@@ -410,9 +410,9 @@ def main():
         rsa_interface.interactive_mode()
         
     except KeyboardInterrupt:
-        print("\n\n👋 Programme interrompu par l'utilisateur")
+        print("\n\nProgramme interrompu par l'utilisateur")
     except Exception as e:
-        print(f"\n❌ Erreur fatale : {e}")
+        print(f"\n Erreur fatale : {e}")
 
 if __name__ == "__main__":
     main()
