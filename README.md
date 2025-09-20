@@ -170,7 +170,7 @@ gcc -Wall -Wextra -g -O0 main.c rsa.c -o test_rsa -lgmp -lsodium
 
 ## 🐍 Utilisation en Python
 
-# Mot de Passe Sécurisé : 1234
+# Si il vous est demandé, Mot de Passe Sécurisé : 1234
 
 ### Installation Rapide
 ```bash
